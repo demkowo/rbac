@@ -108,8 +108,8 @@ func (s *rbac) AddRole(role *model.Role) error {
 	return s.roles.Add(role)
 }
 
-func (s *rbac) DeleteRole(role string) error {
-	return s.roles.Delete(role)
+func (s *rbac) DeleteRole(roleId string) error {
+	return s.roles.Delete(roleId)
 }
 
 func (s *rbac) FindRoles() ([]*model.Role, error) {

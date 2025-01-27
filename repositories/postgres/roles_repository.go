@@ -12,7 +12,7 @@ import (
 
 const (
 	ADD_ROLE               = "INSERT INTO roles (id, name) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING;"
-	DELETE_ROLE            = "DELETE FROM roles WHERE name = $1;"
+	DELETE_ROLE            = "DELETE FROM roles WHERE id = $1;"
 	FIND_ROLES             = "SELECT id, name FROM roles ORDER BY name;"
 	FIND_ROLES_BY_ROUTE_ID = `
         SELECT roles.id, roles.name
@@ -50,8 +50,8 @@ func (r *roles) Add(role *model.Role) error {
 	return nil
 }
 
-func (r *roles) Delete(role string) error {
-	_, err := r.db.Exec(DELETE_ROLE, role)
+func (r *roles) Delete(roleId string) error {
+	_, err := r.db.Exec(DELETE_ROLE, roleId)
 	if err != nil {
 		log.Printf("failed to execute db.Exec DELETE_ROLE: %v", err)
 		return errors.New("failed to delete role")

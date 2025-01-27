@@ -40,7 +40,7 @@ func Start() {
 
 	CreateTables(db)
 
-	rbacHandler.AddActiveRoutes(router)
+	rbacHandler.MarkActiveRoutes(router)
 
 	router.Run(portNumber)
 }

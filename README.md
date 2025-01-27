@@ -18,7 +18,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
     "method": "GET",
     "path": "/api/v1/users",
     "active": true
-}' http://localhost:5000/api/v1/routes/add
+}' http://localhost:5000/api/v1/routes
 ```
 
 ### Add a Role
@@ -26,7 +26,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{
   "name": "admin"
-}' http://localhost:5000/api/v1/roles/add
+}' http://localhost:5000/api/v1/roles
 ```
 
 ### Bind Role to Route
@@ -37,13 +37,13 @@ curl -X POST -H "Content-Type: application/json" -d '[
     "route_id": "<ROUTE_UUID>",
     "role_id": "<ROLE_UUID>"
   }
-]' http://localhost:5000/api/v1/rbac/add
+]' http://localhost:5000/api/v1/rbac
 ```
 
 ### Retrieve All Routes By Role
 
 ```bash
-curl -X GET http://localhost:5000/api/v1/routes/find-by-role/<ROLE_UUID>
+curl -X GET http://localhost:5000/api/v1/routes/role/<ROLE_UUID>
 ```
 
 ## How It Works

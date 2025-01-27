@@ -37,16 +37,16 @@ const (
 )
 
 func CreateTables(db *sql.DB) {
-	if !checkRbacExists(db) {
-		createRbac(db)
-	}
-
 	if !checkRolesExists(db) {
 		createRoles(db)
 	}
 
 	if !checkRoutesExists(db) {
 		createRoutes(db)
+	}
+
+	if !checkRbacExists(db) {
+		createRbac(db)
 	}
 
 	log.Println("tables rbac, roles and routes are ready to go")
@@ -56,7 +56,7 @@ func checkRbacExists(db *sql.DB) bool {
 	var tableName sql.NullString
 	err := db.QueryRow(RBAC_TABLE_EXIST).Scan(&tableName)
 	if err != nil {
-		log.Panic("failed to check rbac table existence")
+		log.Panicf("failed to check rbac table existence: %v", err)
 	}
 
 	return tableName.Valid
@@ -66,7 +66,7 @@ func checkRolesExists(db *sql.DB) bool {
 	var tableName sql.NullString
 	err := db.QueryRow(ROLES_TABLE_EXIST).Scan(&tableName)
 	if err != nil {
-		log.Panic("failed to check roles table existence")
+		log.Panicf("failed to check roles table existence: %v", err)
 	}
 
 	return tableName.Valid
@@ -76,7 +76,7 @@ func checkRoutesExists(db *sql.DB) bool {
 	var tableName sql.NullString
 	err := db.QueryRow(ROUTES_TABLE_EXIST).Scan(&tableName)
 	if err != nil {
-		log.Panic("failed to check routes table existence")
+		log.Panicf("failed to check routes table existence: %v", err)
 	}
 
 	return tableName.Valid
@@ -85,20 +85,20 @@ func checkRoutesExists(db *sql.DB) bool {
 func createRbac(db *sql.DB) {
 	_, err := db.Exec(RBAC_CREATE_TABLE)
 	if err != nil {
-		log.Panic("failed to create rbac table")
+		log.Panicf("failed to create rbac table: %v", err)
 	}
 }
 
 func createRoles(db *sql.DB) {
 	_, err := db.Exec(ROLES_CREATE_TABLE)
 	if err != nil {
-		log.Panic("failed to create roles table")
+		log.Panicf("failed to create roles table: %v", err)
 	}
 }
 
 func createRoutes(db *sql.DB) {
 	_, err := db.Exec(ROUTES_CREATE_TABLE)
 	if err != nil {
-		log.Panic("failed to create routes table")
+		log.Panicf("failed to create routes table: %v", err)
 	}
 }

@@ -197,11 +197,23 @@ func (h *rbac) AddActiveRoutes(router *gin.Engine) ([]*model.Route, error) {
 }
 
 func (h *rbac) AddRoute(c *gin.Context) {
-	var route *model.Route
-	if err := c.ShouldBindJSON(&route); err != nil {
+	var req struct {
+		Method string `json:"method"`
+		Path   string `json:"path"`
+		Active bool   `json:"active"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
 		return
+	}
+
+	route := &model.Route{
+		ID:     uuid.New(),
+		Method: req.Method,
+		Path:   req.Path,
+		Active: req.Active,
 	}
 
 	if err := h.service.AddRoute(route); err != nil {

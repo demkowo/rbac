@@ -18,8 +18,8 @@ const (
 	FIND_ROUTES_BY_ROLE_ID = `
         SELECT routes.id, routes.method, routes.path, routes.active
         FROM routes
-        INNER JOIN auth ON routes.id = auth.route_id
-        WHERE auth.role_id = $1
+        INNER JOIN rbac ON routes.id = rbac.route_id
+        WHERE rbac.role_id = $1
     `
 	SET_ROUTE_INACTIVE = "UPDATE routes SET active = false"
 	UPDATE_ROUTE       = "UPDATE routes SET method = $2, path = $3, active = $4 WHERE id = $1"

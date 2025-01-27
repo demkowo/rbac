@@ -41,43 +41,73 @@ func NewRbac(service service.Rbac) Rbac {
 }
 
 func (h *rbac) AddRbac(c *gin.Context) {
-	var auth []*model.Rbac
-	if err := c.ShouldBindJSON(&auth); err != nil {
+	var req struct {
+		RouteID string `json:"route_id"`
+		RoleID  string `json:"role_id"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
 		return
 	}
 
-	for _, a := range auth {
-		if a.RouteID == uuid.Nil || a.RoleID == uuid.Nil {
-			log.Println("RouteID and RoleID are required")
-			c.JSON(http.StatusBadRequest, gin.H{"error": "RouteID and RoleID are required"})
-			return
-		}
+	roleId, err := uuid.Parse(req.RoleID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid role_id"})
+		return
 	}
 
-	for _, a := range auth {
-		if err := h.service.AddRbac(a); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	routeId, err := uuid.Parse(req.RouteID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid route_id"})
+		return
+	}
+
+	rbac := &model.Rbac{
+		RoleID:  roleId,
+		RouteID: routeId,
+	}
+
+	if err := h.service.AddRbac(rbac); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Authorizations added successfully"})
 }
 
 func (h *rbac) DeleteRbac(c *gin.Context) {
-	var auth []*model.Rbac
-	if err := c.ShouldBindJSON(&auth); err != nil {
+	var req struct {
+		RouteID string `json:"route_id"`
+		RoleID  string `json:"role_id"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
 		return
 	}
 
-	for _, a := range auth {
-		if err := h.service.DeleteRbac(a); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	roleId, err := uuid.Parse(req.RoleID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid role_id"})
+		return
+	}
+
+	routeId, err := uuid.Parse(req.RouteID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid route_id"})
+		return
+	}
+
+	rbac := &model.Rbac{
+		RoleID:  roleId,
+		RouteID: routeId,
+	}
+
+	if err := h.service.DeleteRbac(rbac); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Authorizations deleted successfully"})
@@ -94,11 +124,19 @@ func (h *rbac) FindRbac(c *gin.Context) {
 }
 
 func (h *rbac) AddRole(c *gin.Context) {
-	var role *model.Role
-	if err := c.ShouldBindJSON(&role); err != nil {
+	var req struct {
+		Name string `json:"name"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON data"})
 		return
+	}
+
+	role := &model.Role{
+		ID:   uuid.New(),
+		Name: req.Name,
 	}
 
 	if err := h.service.AddRole(role); err != nil {

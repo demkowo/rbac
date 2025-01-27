@@ -17,8 +17,8 @@ const (
 	FIND_ROLES_BY_ROUTE_ID = `
         SELECT roles.id, roles.name
         FROM roles
-        INNER JOIN auth ON roles.id = auth.role_id
-        WHERE auth.route_id = $1
+        INNER JOIN rbac ON roles.id = rbac.role_id
+        WHERE rbac.route_id = $1
     `
 	ROLE_EXISTS_BY_ID = "SELECT EXISTS(SELECT 1 FROM roles WHERE id=$1)"
 	UPDATE_ROLE       = "UPDATE roles SET name = $2 WHERE id = $1;"

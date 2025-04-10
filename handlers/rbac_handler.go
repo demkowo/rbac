@@ -27,10 +27,11 @@ type Rbac interface {
 	UpdateRole(*gin.Context)
 
 	AddRoute(*gin.Context)
+	AddExternalRoutes(*gin.Context)
 	DeleteRoute(*gin.Context)
 	FindRoutes(*gin.Context)
 	FindRoutesByRole(*gin.Context)
-	MarkActiveRoutes(*gin.Engine) ([]*model.Route, error)
+	MarkActiveRoutes(*gin.Engine) ([]model.Route, error)
 	UpdateRoute(*gin.Context)
 }
 
@@ -211,6 +212,24 @@ func (h *rbac) AddRoute(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"route": route})
 }
 
+func (h *rbac) AddExternalRoutes(c *gin.Context) {
+	var routes []model.Route
+	svc := c.Param("service")
+
+	if err := c.ShouldBindJSON(&routes); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.service.SetRoutesInactive(svc); err != nil {
+		log.Println("setting routes inactive failed", err)
+	}
+	if err := h.service.AddActiveRoutes(routes); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"routes registered": routes})
+}
+
 func (h *rbac) DeleteRoute(c *gin.Context) {
 	routeID, err := parseUUID(c, "route_id", c.Param("route_id"))
 	if err != nil {
@@ -250,22 +269,23 @@ func (h *rbac) FindRoutesByRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"routes": routes})
 }
 
-func (h *rbac) MarkActiveRoutes(router *gin.Engine) ([]*model.Route, error) {
-	if err := h.service.SetRoutesInactive(); err != nil {
-		log.Println("setting routes inactive failed", err)
-	}
-
-	var routes []*model.Route
+func (h *rbac) MarkActiveRoutes(router *gin.Engine) ([]model.Route, error) {
+	var routes []model.Route
 
 	for _, route := range router.Routes() {
-		r := &model.Route{
-			ID:     uuid.New(),
-			Method: route.Method,
-			Path:   route.Path,
-			Active: true,
+		r := model.Route{
+			ID:      uuid.New(),
+			Method:  route.Method,
+			Path:    route.Path,
+			Service: "rbac",
+			Active:  true,
 		}
 
 		routes = append(routes, r)
+	}
+
+	if err := h.service.SetRoutesInactive("rbac"); err != nil {
+		log.Println("setting routes inactive failed", err)
 	}
 
 	if err := h.service.AddActiveRoutes(routes); err != nil {

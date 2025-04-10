@@ -23,13 +23,13 @@ type RolesRepo interface {
 }
 
 type RoutesRepo interface {
-	AddActive([]*model.Route) error
+	AddActive([]model.Route) error
 	Add(*model.Route) error
 	Delete(uuid.UUID) error
 	ExistsByID(uuid.UUID) (bool, error)
 	Find() ([]*model.Route, error)
 	FindByRole(uuid.UUID) ([]*model.Route, error)
-	SetInactive() error
+	SetInactive(string) error
 	Update(*model.Route) error
 }
 
@@ -44,13 +44,13 @@ type Rbac interface {
 	FindRolesByRoute(uuid.UUID) ([]*model.Role, error)
 	UpdateRole(*model.Role) error
 
-	AddActiveRoutes([]*model.Route) error
+	AddActiveRoutes([]model.Route) error
 	AddRoute(*model.Route) error
 	DeleteRoute(uuid.UUID) error
 	FindRoutes() ([]*model.Route, error)
 	FindRoutesByRole(uuid.UUID) ([]*model.Route, error)
 	UpdateRoute(*model.Route) error
-	SetRoutesInactive() error
+	SetRoutesInactive(string) error
 }
 
 type rbac struct {
@@ -124,7 +124,7 @@ func (s *rbac) UpdateRole(role *model.Role) error {
 	return s.roles.Update(role)
 }
 
-func (s *rbac) AddActiveRoutes(routes []*model.Route) error {
+func (s *rbac) AddActiveRoutes(routes []model.Route) error {
 	return s.routes.AddActive(routes)
 }
 
@@ -148,8 +148,8 @@ func (s *rbac) FindRoutesByRole(roleID uuid.UUID) ([]*model.Route, error) {
 	return s.routes.FindByRole(roleID)
 }
 
-func (s *rbac) SetRoutesInactive() error {
-	return s.routes.SetInactive()
+func (s *rbac) SetRoutesInactive(service string) error {
+	return s.routes.SetInactive(service)
 }
 
 func (s *rbac) UpdateRoute(route *model.Route) error {

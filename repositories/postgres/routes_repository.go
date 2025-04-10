@@ -10,29 +10,29 @@ import (
 )
 
 const (
-	ADD_ACTIVE_ROUTES      = "INSERT INTO routes (id, method, path, active) VALUES ($1,$2,$3,$4) ON CONFLICT (method, path) DO UPDATE SET active=$4"
-	ADD_ROUTE              = `INSERT INTO routes (id, method, path, active) VALUES ($1, $2, $3, $4)ON CONFLICT (method, path) DO UPDATE SET active = EXCLUDED.active`
+	ADD_ACTIVE_ROUTES      = `INSERT INTO routes (id, method, path, service, active) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (method, path, service) DO UPDATE SET active=$5`
+	ADD_ROUTE              = `INSERT INTO routes (id, method, path, service, active) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (method, path) DO UPDATE SET active = EXCLUDED.active`
 	DELETE_ROUTE           = "DELETE FROM routes WHERE id = $1"
 	ROUTE_EXISTS_BY_ID     = "SELECT EXISTS(SELECT 1 FROM routes WHERE id=$1)"
-	FIND_ROUTES            = "SELECT id, method, path, active FROM routes ORDER BY path, method"
+	FIND_ROUTES            = "SELECT id, method, path, service, active FROM routes ORDER BY path, method"
 	FIND_ROUTES_BY_ROLE_ID = `
-        SELECT routes.id, routes.method, routes.path, routes.active
+        SELECT routes.id, routes.method, routes.path, routes.service, routes.active
         FROM routes
         INNER JOIN rbac ON routes.id = rbac.route_id
         WHERE rbac.role_id = $1
     `
-	SET_ROUTE_INACTIVE = "UPDATE routes SET active = false"
-	UPDATE_ROUTE       = "UPDATE routes SET method = $2, path = $3, active = $4 WHERE id = $1"
+	SET_ROUTE_INACTIVE = "UPDATE routes SET active = false WHERE service = $1"
+	UPDATE_ROUTE       = "UPDATE routes SET method = $2, path = $3, service = $4, active = $5 WHERE id = $1"
 )
 
 type Routes interface {
-	AddActive([]*model.Route) error
+	AddActive([]model.Route) error
 	Add(*model.Route) error
 	Delete(uuid.UUID) error
 	ExistsByID(uuid.UUID) (bool, error)
 	Find() ([]*model.Route, error)
 	FindByRole(uuid.UUID) ([]*model.Route, error)
-	SetInactive() error
+	SetInactive(string) error
 	Update(*model.Route) error
 }
 
@@ -44,9 +44,9 @@ func NewRoutes(db *sql.DB) Routes {
 	return &routes{db: db}
 }
 
-func (r *routes) AddActive(routes []*model.Route) error {
+func (r *routes) AddActive(routes []model.Route) error {
 	for _, route := range routes {
-		_, err := r.db.Exec(ADD_ACTIVE_ROUTES, route.ID, route.Method, route.Path, route.Active)
+		_, err := r.db.Exec(ADD_ACTIVE_ROUTES, route.ID, route.Method, route.Path, route.Service, route.Active)
 		if err != nil {
 			log.Printf("failed to execute db.Exec ADD_ACTIVE_ROUTES: %v", err)
 			return errors.New("failed to update list of routes")
@@ -56,7 +56,7 @@ func (r *routes) AddActive(routes []*model.Route) error {
 }
 
 func (r *routes) Add(route *model.Route) error {
-	_, err := r.db.Exec(ADD_ROUTE, route.ID, route.Method, route.Path, route.Active)
+	_, err := r.db.Exec(ADD_ROUTE, route.ID, route.Method, route.Path, route.Service, route.Active)
 	if err != nil {
 		log.Printf("failed to execute db.Exec ADD_ROUTE: %v", err)
 		return errors.New("failed to add route")
@@ -95,7 +95,7 @@ func (r *routes) Find() ([]*model.Route, error) {
 	var routes []*model.Route
 	for rows.Next() {
 		var route model.Route
-		if err := rows.Scan(&route.ID, &route.Method, &route.Path, &route.Active); err != nil {
+		if err := rows.Scan(&route.ID, &route.Method, &route.Path, &route.Service, &route.Active); err != nil {
 			log.Printf("failed to scan FIND_ROUTES record: %v", err)
 			return nil, errors.New("failed to fetch routes")
 		}
@@ -122,7 +122,7 @@ func (r *routes) FindByRole(roleID uuid.UUID) ([]*model.Route, error) {
 	var routes []*model.Route
 	for rows.Next() {
 		var route model.Route
-		if err := rows.Scan(&route.ID, &route.Method, &route.Path, &route.Active); err != nil {
+		if err := rows.Scan(&route.ID, &route.Method, &route.Path, &route.Service, &route.Active); err != nil {
 			log.Printf("failed to scan FIND_ROUTES_BY_ROLE_ID record: %v", err)
 			return nil, errors.New("failed to find routes for role")
 		}
@@ -137,8 +137,8 @@ func (r *routes) FindByRole(roleID uuid.UUID) ([]*model.Route, error) {
 	return routes, nil
 }
 
-func (r *routes) SetInactive() error {
-	_, err := r.db.Exec(SET_ROUTE_INACTIVE)
+func (r *routes) SetInactive(service string) error {
+	_, err := r.db.Exec(SET_ROUTE_INACTIVE, service)
 	if err != nil {
 		log.Printf("failed to execute db.Exec SET_ROUTE_INACTIVE: %v", err)
 		return errors.New("failed to set routes inactive")
@@ -148,7 +148,7 @@ func (r *routes) SetInactive() error {
 }
 
 func (r *routes) Update(route *model.Route) error {
-	_, err := r.db.Exec(UPDATE_ROUTE, route.ID, route.Method, route.Path, route.Active)
+	_, err := r.db.Exec(UPDATE_ROUTE, route.ID, route.Method, route.Path, route.Service, route.Active)
 	if err != nil {
 		log.Printf("failed to execute db.Exec UPDATE_ROUTE: %v", err)
 		return errors.New("failed to update route")

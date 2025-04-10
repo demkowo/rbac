@@ -5,10 +5,11 @@ import (
 )
 
 type Route struct {
-	ID     uuid.UUID `json:"id"`
-	Method string    `json:"method"`
-	Path   string    `json:"path"`
-	Active bool      `json:"active"`
+	ID      uuid.UUID `json:"id"`
+	Method  string    `json:"method"`
+	Path    string    `json:"path"`
+	Service string    `json:"service"`
+	Active  bool      `json:"active"`
 }
 
 type Role struct {

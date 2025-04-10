@@ -30,8 +30,9 @@ const (
             id UUID PRIMARY KEY,
             method VARCHAR(10) NOT NULL,
             path VARCHAR(255) NOT NULL,
+			service TEXT NOT NULL,
             active BOOLEAN NOT NULL DEFAULT TRUE,
-            UNIQUE (method, path)
+            UNIQUE (method, path, service)
         );
 	`
 )

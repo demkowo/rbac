@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	handler "github.com/demkowo/rbac/handlers"
@@ -16,11 +18,11 @@ import (
 )
 
 const (
-	portNumber = ":5000"
+	portNumber = ":5001"
 )
 
 var (
-	dbConnection = os.Getenv("DB_CLIENT")
+	dbConnection = os.Getenv("DB_RBAC")
 	router       = gin.Default()
 )
 
@@ -30,6 +32,15 @@ func Start() {
 		log.Panic(err)
 	}
 	defer db.Close()
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	rbacRepo := postgres.NewRbac(db)
 	rolesRepo := postgres.NewRoles(db)

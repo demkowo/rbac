@@ -11,7 +11,7 @@ import (
 
 const (
 	ADD_ACTIVE_ROUTES      = `INSERT INTO routes (id, method, path, service, active) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (method, path, service) DO UPDATE SET active=$5`
-	ADD_ROUTE              = `INSERT INTO routes (id, method, path, service, active) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (method, path) DO UPDATE SET active = EXCLUDED.active`
+	ADD_ROUTE              = `INSERT INTO routes (id, method, path, service, active) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (method, path, service) DO UPDATE SET active = EXCLUDED.active`
 	DELETE_ROUTE           = "DELETE FROM routes WHERE id = $1"
 	ROUTE_EXISTS_BY_ID     = "SELECT EXISTS(SELECT 1 FROM routes WHERE id=$1)"
 	FIND_ROUTES            = "SELECT id, method, path, service, active FROM routes ORDER BY path, method"

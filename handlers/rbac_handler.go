@@ -24,6 +24,7 @@ type Rbac interface {
 	DeleteRole(*gin.Context)
 	FindRoles(*gin.Context)
 	FindRolesByRoute(*gin.Context)
+	FindRolesByRoutes(*gin.Context)
 	UpdateRole(*gin.Context)
 
 	AddRoute(*gin.Context)
@@ -130,7 +131,12 @@ func (h *rbac) AddRole(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"role": role.Name})
+	c.JSON(http.StatusCreated, gin.H{
+		"role": gin.H{
+			"id":   role.ID,
+			"name": role.Name,
+		},
+	})
 }
 
 func (h *rbac) DeleteRole(c *gin.Context) {
@@ -167,6 +173,22 @@ func (h *rbac) FindRolesByRoute(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"roles": roles})
 }
 
+func (h *rbac) FindRolesByRoutes(c *gin.Context) {
+	var routes []model.Route
+
+	if !bindJSON(c, &routes) {
+		return
+	}
+
+	roles, err := h.service.FindRolesByRoutes(routes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"roles": roles})
+}
+
 func (h *rbac) UpdateRole(c *gin.Context) {
 	var role *model.Role
 
@@ -188,9 +210,11 @@ func (h *rbac) UpdateRole(c *gin.Context) {
 
 func (h *rbac) AddRoute(c *gin.Context) {
 	var req struct {
-		Method string `json:"method"`
-		Path   string `json:"path"`
-		Active bool   `json:"active"`
+		Method  string   `json:"method"`
+		Path    string   `json:"path"`
+		Service string   `json:"service"`
+		Active  bool     `json:"active"`
+		RoleIDs []string `json:"roles"` // Nowe pole
 	}
 
 	if !bindJSON(c, &req) {
@@ -198,15 +222,31 @@ func (h *rbac) AddRoute(c *gin.Context) {
 	}
 
 	route := &model.Route{
-		ID:     uuid.New(),
-		Method: req.Method,
-		Path:   req.Path,
-		Active: req.Active,
+		ID:      uuid.New(),
+		Method:  req.Method,
+		Path:    req.Path,
+		Service: req.Service,
+		Active:  req.Active,
 	}
 
 	if err := h.service.AddRoute(route); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"AddRoute failed": err.Error()})
 		return
+	}
+
+	// Dodanie przypisań do roli
+	for _, roleIdStr := range req.RoleIDs {
+		roleId, err := uuid.Parse(roleIdStr)
+		if err != nil {
+			log.Printf("invalid role ID: %s", roleIdStr)
+			continue
+		}
+		if err := h.service.AddRbac(&model.Rbac{
+			RouteID: route.ID,
+			RoleID:  roleId,
+		}); err != nil {
+			log.Printf("failed to add RBAC for role %s: %v", roleId, err)
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"route": route})
@@ -220,6 +260,7 @@ func (h *rbac) AddExternalRoutes(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	fmt.Printf("fetched %d routes\n%v", len(routes), routes)
 	if err := h.service.SetRoutesInactive(svc); err != nil {
 		log.Println("setting routes inactive failed", err)
 	}

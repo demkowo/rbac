@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log"
 
 	model "github.com/demkowo/rbac/models"
 	"github.com/google/uuid"
@@ -42,6 +43,7 @@ type Rbac interface {
 	DeleteRole(string) error
 	FindRoles() ([]*model.Role, error)
 	FindRolesByRoute(uuid.UUID) ([]*model.Role, error)
+	FindRolesByRoutes([]model.Route) (map[uuid.UUID][]*model.Role, error)
 	UpdateRole(*model.Role) error
 
 	AddActiveRoutes([]model.Route) error
@@ -118,6 +120,22 @@ func (s *rbac) FindRoles() ([]*model.Role, error) {
 
 func (s *rbac) FindRolesByRoute(routeID uuid.UUID) ([]*model.Role, error) {
 	return s.roles.FindByRoute(routeID)
+}
+
+func (s *rbac) FindRolesByRoutes(routes []model.Route) (map[uuid.UUID][]*model.Role, error) {
+	roleMap := make(map[uuid.UUID][]*model.Role)
+
+	for _, route := range routes {
+		roles, err := s.roles.FindByRoute(route.ID)
+		if err != nil {
+			// Możesz pominąć tylko tę trasę lub przerwać całość – zależnie od potrzeb
+			log.Printf("error getting roles for route %s: %v", route.ID, err)
+			continue // lub: return nil, err
+		}
+		roleMap[route.ID] = roles
+	}
+
+	return roleMap, nil
 }
 
 func (s *rbac) UpdateRole(role *model.Role) error {
